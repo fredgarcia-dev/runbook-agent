@@ -4,23 +4,17 @@ LangSmith LLM trace integration — graceful degradation.
 If LANGSMITH_API_KEY is not set or the langsmith package is unavailable,
 all functions in this module are safe no-ops. Nothing executes automatically.
 
-Usage in main.py:
-    from observability.tracing import maybe_wrap_client, traceable_step
-    client = maybe_wrap_client(anthropic.Anthropic(...))
-
 Usage in agents:
-    from observability.tracing import traceable_step
-    @traceable_step(name="triage")
-    def classify(self, incident): ...
+    from observability.tracing import trace_span
+    with trace_span("triage_classify", run_type="llm"):
+        result = self.client.messages.create(...)
 """
 
 from __future__ import annotations
 
-import functools
+import contextlib
 import os
-from typing import Any, Callable, TypeVar
-
-_F = TypeVar("_F", bound=Callable[..., Any])
+from typing import Any, Generator
 
 # ---------------------------------------------------------------------------
 # Detect availability
@@ -47,38 +41,39 @@ def maybe_wrap_client(client: Any) -> Any:
     """
     Wrap an anthropic.Anthropic client with LangSmith tracing if enabled.
     Returns the original client unchanged when LangSmith is not configured.
-    This is purely observational — no side effects on the client's behaviour.
     """
     if not ENABLED:
         return client
     try:
         from langsmith.wrappers import wrap_anthropic
-        wrapped = wrap_anthropic(client)
-        return wrapped
+        return wrap_anthropic(client)
     except Exception:
-        # Never let tracing break the main pipeline
         return client
 
 
 # ---------------------------------------------------------------------------
-# Step decorator
+# Trace context manager (replaces decorator — works reliably on methods)
 # ---------------------------------------------------------------------------
 
-def traceable_step(name: str, run_type: str = "chain") -> Callable[[_F], _F]:
+@contextlib.contextmanager
+def trace_span(name: str, run_type: str = "chain", metadata: dict | None = None) -> Generator[None, None, None]:
     """
-    Decorator that wraps a method with a LangSmith trace span.
-    When LangSmith is disabled this is a transparent pass-through.
-    """
-    def decorator(fn: _F) -> _F:
-        if not ENABLED:
-            return fn
-        try:
-            from langsmith import traceable
-            return traceable(name=name, run_type=run_type)(fn)  # type: ignore[return-value]
-        except Exception:
-            return fn
+    Context manager that wraps a block with a LangSmith trace span.
+    Silent no-op when LangSmith is disabled.
 
-    return decorator
+    Usage:
+        with trace_span("triage_classify", run_type="llm"):
+            result = client.messages.create(...)
+    """
+    if not ENABLED:
+        yield
+        return
+    try:
+        from langsmith import trace
+        with trace(name=name, run_type=run_type, metadata=metadata or {}):
+            yield
+    except Exception:
+        yield
 
 
 # ---------------------------------------------------------------------------
@@ -86,13 +81,11 @@ def traceable_step(name: str, run_type: str = "chain") -> Callable[[_F], _F]:
 # ---------------------------------------------------------------------------
 
 def configure(project: str = "runbook-agent") -> None:
-    """
-    Set the LangSmith project name if tracing is enabled.
-    Safe to call unconditionally — no-op when disabled.
-    """
+    """Enable tracing and set project name. Safe no-op when disabled."""
     if not ENABLED:
         return
-    # LANGCHAIN_PROJECT / LANGSMITH_PROJECT are the env vars LangSmith checks
+    os.environ.setdefault("LANGSMITH_TRACING", "true")
+    os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
     os.environ.setdefault("LANGSMITH_PROJECT", project)
     os.environ.setdefault("LANGCHAIN_PROJECT", project)
 

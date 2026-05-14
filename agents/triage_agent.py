@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import anthropic
 
 from observability.metrics import time_claude_call, triage_confidence
-from observability.tracing import traceable_step
+from observability.tracing import trace_span
 
 
 @dataclass
@@ -86,27 +86,27 @@ class TriageAgent:
     def __init__(self, client: anthropic.Anthropic) -> None:
         self.client = client
 
-    @traceable_step(name="triage_classify", run_type="llm")
     def classify(self, incident_description: str) -> TriageResult:
-        with time_claude_call("triage", self.MODEL):
-            response = self.client.messages.create(
-                model=self.MODEL,
-                max_tokens=1024,
-                thinking={"type": "adaptive"},
-                system=[
-                    {
-                        "type": "text",
-                        "text": _SYSTEM_PROMPT,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-                messages=[
-                    {
-                        "role": "user",
-                        "content": f"Classify this incident:\n\n{incident_description}",
-                    }
-                ],
-            )
+        with trace_span("triage_classify", run_type="llm"):
+            with time_claude_call("triage", self.MODEL):
+                response = self.client.messages.create(
+                    model=self.MODEL,
+                    max_tokens=1024,
+                    thinking={"type": "adaptive"},
+                    system=[
+                        {
+                            "type": "text",
+                            "text": _SYSTEM_PROMPT,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": f"Classify this incident:\n\n{incident_description}",
+                        }
+                    ],
+                )
 
         text = _first_text(response)
         data = _parse_json(text)

@@ -15,7 +15,7 @@ import anthropic
 from .triage_agent import TriageResult
 from .runbook_retriever import RunbookResult
 from observability.metrics import time_claude_call, remediation_confidence
-from observability.tracing import traceable_step
+from observability.tracing import trace_span
 
 
 @dataclass
@@ -74,7 +74,6 @@ class RemediationAgent:
     def __init__(self, client: anthropic.Anthropic) -> None:
         self.client = client
 
-    @traceable_step(name="remediation_generate_plan", run_type="llm")
     def generate_plan(
         self,
         triage: TriageResult,
@@ -98,21 +97,22 @@ class RemediationAgent:
         )
 
         # Stream the response — plans can be verbose; streaming prevents timeouts
-        with time_claude_call("remediation", self.MODEL):
-            with self.client.messages.stream(
-                model=self.MODEL,
-                max_tokens=4096,
-                thinking={"type": "adaptive"},
-                system=[
-                    {
-                        "type": "text",
-                        "text": _SYSTEM_PROMPT,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-                messages=[{"role": "user", "content": user_msg}],
-            ) as stream:
-                response = stream.get_final_message()
+        with trace_span("remediation_generate_plan", run_type="llm"):
+            with time_claude_call("remediation", self.MODEL):
+                with self.client.messages.stream(
+                    model=self.MODEL,
+                    max_tokens=4096,
+                    thinking={"type": "adaptive"},
+                    system=[
+                        {
+                            "type": "text",
+                            "text": _SYSTEM_PROMPT,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
+                    messages=[{"role": "user", "content": user_msg}],
+                ) as stream:
+                    response = stream.get_final_message()
 
         text = _first_text(response)
         data = _parse_json(text)

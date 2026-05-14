@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    project: runbook-agent
+
+scrape_configs:
+
+  - job_name: prometheus
+    static_configs:
+      - targets: [localhost:9090]
+
+  - job_name: node_exporter
+    static_configs:
+      - targets: [node_exporter:9100]
+
+  # Phase 2: runbook agent metrics endpoint (added here so Prometheus is ready)
+  - job_name: runbook_agent
+    static_configs:
+      - targets: [host.docker.internal:8000]
+    metrics_path: /metrics

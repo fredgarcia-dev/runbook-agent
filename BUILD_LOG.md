@@ -133,19 +133,28 @@ Tracks what was built in each phase, why, and key decisions.
 
 ---
 
-## LinkedIn Post + GitHub Publish
-*Planned — after Phase 6, before Phase 7*
+## LinkedIn Post + GitHub Publish ✅
+GitHub: https://github.com/fredgarcia-dev/runbook-agent
 
 ---
 
-## Phase 7 — Local Kubernetes Deployment (Docker Desktop)
-*Planned*
+## Phase 7 — Local Kubernetes Deployment (Docker Desktop) ✅
+**Date:** 2026-05-15
 
-### Goals
-- Enable Kubernetes via Docker Desktop (free, single-node, already on Mac Mini)
-- Containerize the runbook agent (`Dockerfile`)
-- Deploy as a Kubernetes `Deployment` + `Service`
-- Add a `ServiceMonitor` so Prometheus scrapes the agent pod automatically
-- Trigger the pipeline from a real K8s event (e.g., simulated OOMKilled pod)
-- Add a Grafana dashboard row for cluster-level metrics (pod restarts, memory, CPU)
-- Demonstrate `kubectl` commands: `apply`, `get pods`, `logs`, `describe`
+### What was built
+| File | Purpose |
+|------|---------|
+| `Dockerfile` | Containerizes the agent using python:3.12-slim |
+| `.dockerignore` | Excludes venv, .env, data/, docs/ from the image |
+| `scripts/serve.py` | K8s-friendly server mode — generates synthetic metrics in a loop, no API calls |
+| `k8s/deployment.yaml` | Kubernetes Deployment with readiness + liveness probes |
+| `k8s/service.yaml` | LoadBalancer service exposing metrics on :8001 |
+| `prometheus/prometheus.yml` | Added `runbook_agent_k8s` scrape job on host.docker.internal:8001 |
+| `Makefile` | Added `k8s-build`, `k8s-deploy`, `k8s-status`, `k8s-logs`, `k8s-delete` |
+
+### Key decisions
+- **Local registry** — Docker Desktop K8s uses `containerd`, not Docker's daemon. Images must be pushed to a local registry (`localhost:5001`) to be available to pods.
+- **LoadBalancer over NodePort** — NodePort services aren't accessible on `localhost` on Mac with Docker Desktop. LoadBalancer type gets a reachable external IP automatically.
+- **Port 8001** — K8s service uses port 8001 externally (targeting pod :8000) to avoid conflicting with local `main.py` metrics server on :8000.
+- **serve.py** — separate server mode for K8s that generates synthetic metrics in a loop; no Claude API key or ChromaDB required inside the container.
+- **Prometheus reload** — `docker compose restart prometheus` required after adding the new scrape job (volume-mounted config, `/-/reload` endpoint had a caching issue).

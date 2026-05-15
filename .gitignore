@@ -37,3 +37,7 @@ htmlcov/
 
 # Private docs
 docs/verbal_summary.md
+docs/talking_points.md
+docs/talking_points.docx
+docs/kubernetes_setup.md
+docs/kubernetes_setup.docx

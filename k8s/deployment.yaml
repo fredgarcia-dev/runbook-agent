@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: runbook-agent
+  namespace: default
+  labels:
+    app: runbook-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: runbook-agent
+  template:
+    metadata:
+      labels:
+        app: runbook-agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: runbook-agent
+          image: localhost:5001/runbook-agent:latest
+          imagePullPolicy: Always       # pull from local registry
+          ports:
+            - containerPort: 8000
+              name: metrics
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 30

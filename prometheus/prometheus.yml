@@ -14,8 +14,14 @@ scrape_configs:
     static_configs:
       - targets: [node_exporter:9100]
 
-  # Phase 2: runbook agent metrics endpoint (added here so Prometheus is ready)
+  # Phase 2: runbook agent running locally (main.py)
   - job_name: runbook_agent
     static_configs:
       - targets: [host.docker.internal:8000]
+    metrics_path: /metrics
+
+  # Phase 7: runbook agent running in Kubernetes (LoadBalancer on :8001)
+  - job_name: runbook_agent_k8s
+    static_configs:
+      - targets: [host.docker.internal:8001]
     metrics_path: /metrics

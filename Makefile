@@ -1,4 +1,5 @@
-.PHONY: up down logs ps clean open-grafana open-prometheus load health help
+.PHONY: up down logs ps clean open-grafana open-prometheus load health \
+        k8s-build k8s-deploy k8s-status k8s-logs k8s-delete help
 
 COMPOSE = docker compose
 PYTHON  = venv/bin/python
@@ -15,6 +16,11 @@ help:
 	@echo "  make open-prometheus Open Prometheus in the browser  (http://localhost:9090)"
 	@echo "  make load            Run synthetic load generator (populates Grafana)"
 	@echo "  make health          Run stack health check validator"
+	@echo "  make k8s-build       Build the agent Docker image for Kubernetes"
+	@echo "  make k8s-deploy      Deploy agent to local Kubernetes cluster"
+	@echo "  make k8s-status      Show pod and service status"
+	@echo "  make k8s-logs        Tail logs from the agent pod"
+	@echo "  make k8s-delete      Remove agent from Kubernetes"
 
 up:
 	$(COMPOSE) up -d
@@ -46,3 +52,28 @@ load:
 
 health:
 	$(PYTHON) scripts/health_check.py --verbose
+
+k8s-build:
+	docker build -t runbook-agent:latest .
+	docker tag runbook-agent:latest localhost:5001/runbook-agent:latest
+	docker push localhost:5001/runbook-agent:latest
+	@echo "Image built and pushed to local registry"
+
+k8s-deploy:
+	kubectl apply -f k8s/deployment.yaml
+	kubectl apply -f k8s/service.yaml
+	@echo ""
+	@echo "Deployed — metrics will be available at http://localhost:30800/metrics"
+	@echo "Run 'make k8s-status' to check pod readiness"
+
+k8s-status:
+	kubectl get pods -l app=runbook-agent
+	@echo ""
+	kubectl get service runbook-agent
+
+k8s-logs:
+	kubectl logs -l app=runbook-agent --follow
+
+k8s-delete:
+	kubectl delete -f k8s/deployment.yaml --ignore-not-found
+	kubectl delete -f k8s/service.yaml --ignore-not-found

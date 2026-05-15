@@ -1,0 +1,15 @@
+venv/
+.env
+data/
+__pycache__/
+*.pyc
+.git/
+docs/
+grafana/
+prometheus/
+k8s/
+*.md
+Makefile
+docker-compose.yml
+.gitignore
+.dockerignore

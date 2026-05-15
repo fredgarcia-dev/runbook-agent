@@ -123,22 +123,13 @@ Tracks what was built in each phase, why, and key decisions.
 
 ---
 
-## Phase 6 — Documentation & Interview Talking Points ✅
+## Phase 6 — Documentation ✅
 **Date:** 2026-05-14
 
 ### What was built
 | File | Purpose |
 |------|---------|
-| `README.md` | Full project documentation — architecture diagram, quick start, observability details, Makefile reference, interview talking points |
-
-### Interview talking points covered
-1. Why multi-agent over a single prompt
-2. How the RAG pipeline works (ChromaDB + sentence-transformers)
-3. Why Claude with extended thinking + streaming
-4. How the safety boundary is enforced (pure Python router, no shell exec)
-5. Why Prometheus + Grafana over SaaS APM
-6. What MTTR measures and why it's a proxy
-7. What you'd add for production (Pushgateway, Alertmanager, K8s ServiceMonitor)
+| `README.md` | Full project documentation — architecture diagram, quick start, observability details, Makefile reference |
 
 ---
 

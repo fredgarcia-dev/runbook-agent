@@ -156,6 +156,7 @@ Gracefully disabled when key is absent — the agent runs identically either way
 ## Makefile Commands
 
 ```bash
+# Observability stack
 make up              # Start Prometheus, Grafana, Node Exporter
 make down            # Stop all containers
 make logs            # Tail container logs
@@ -165,6 +166,53 @@ make load            # Synthetic load generator — populates Grafana panels
 make health          # Stack health validator — pass/warn/fail per component
 make open-grafana    # Open http://localhost:3000
 make open-prometheus # Open http://localhost:9090
+
+# Kubernetes
+make k8s-build       # Build + push Docker image to local registry
+make k8s-deploy      # Deploy agent to Kubernetes cluster
+make k8s-status      # Show pod and service status
+make k8s-logs        # Tail live logs from the agent pod
+make k8s-delete      # Remove agent from Kubernetes
+```
+
+---
+
+## Kubernetes Deployment
+
+The agent runs as a containerised workload on a local Kubernetes cluster (Docker Desktop). It exposes `/metrics` on port 8000 inside the pod, surfaced via a LoadBalancer service on `localhost:8001`. Prometheus scrapes it automatically.
+
+### Handy kubectl Commands
+
+```bash
+# Status
+kubectl get pods -l app=runbook-agent                      # pod name + ready state
+kubectl get service runbook-agent                          # external IP + port mapping
+kubectl get all -n default                                 # everything in the cluster
+
+# Logs & debugging
+kubectl logs -l app=runbook-agent --follow                 # live log stream
+kubectl logs -l app=runbook-agent --previous               # logs from last crashed pod
+kubectl describe pod -l app=runbook-agent                  # full detail + events
+kubectl get events --sort-by=.metadata.creationTimestamp   # recent cluster events
+
+# Shell into a running pod
+kubectl exec -it $(kubectl get pod -l app=runbook-agent -o name) -- /bin/sh
+
+# Rollouts
+kubectl rollout status deployment/runbook-agent            # watch rollout progress
+kubectl rollout restart deployment/runbook-agent           # rolling restart (zero downtime)
+kubectl rollout undo deployment/runbook-agent              # rollback to previous version
+
+# Scaling
+kubectl scale deployment runbook-agent --replicas=2        # scale up
+kubectl scale deployment runbook-agent --replicas=1        # scale back down
+
+# Resource usage (requires metrics-server)
+kubectl top pods -l app=runbook-agent                      # CPU + memory per pod
+
+# Context management
+kubectl config get-contexts                                # list all clusters
+kubectl config use-context docker-desktop                  # switch to local cluster
 ```
 
 ---

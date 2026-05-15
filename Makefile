@@ -20,6 +20,11 @@ help:
 	@echo "  make k8s-deploy      Deploy agent to local Kubernetes cluster"
 	@echo "  make k8s-status      Show pod and service status"
 	@echo "  make k8s-logs        Tail logs from the agent pod"
+	@echo "  make k8s-describe    Full pod detail and events"
+	@echo "  make k8s-shell       Open a shell inside the running pod"
+	@echo "  make k8s-restart     Rolling restart of the deployment"
+	@echo "  make k8s-scale-up    Scale to 2 replicas"
+	@echo "  make k8s-scale-down  Scale back to 1 replica"
 	@echo "  make k8s-delete      Remove agent from Kubernetes"
 
 up:
@@ -77,3 +82,21 @@ k8s-logs:
 k8s-delete:
 	kubectl delete -f k8s/deployment.yaml --ignore-not-found
 	kubectl delete -f k8s/service.yaml --ignore-not-found
+
+k8s-describe:
+	kubectl describe pod -l app=runbook-agent
+
+k8s-events:
+	kubectl get events --sort-by=.metadata.creationTimestamp --field-selector involvedObject.name=$$(kubectl get pod -l app=runbook-agent -o name | head -1 | cut -d/ -f2)
+
+k8s-shell:
+	kubectl exec -it $$(kubectl get pod -l app=runbook-agent -o name | head -1) -- /bin/sh
+
+k8s-restart:
+	kubectl rollout restart deployment/runbook-agent
+
+k8s-scale-up:
+	kubectl scale deployment runbook-agent --replicas=2
+
+k8s-scale-down:
+	kubectl scale deployment runbook-agent --replicas=1

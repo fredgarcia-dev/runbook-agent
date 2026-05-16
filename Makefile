@@ -1,5 +1,7 @@
 .PHONY: up down logs ps clean open-grafana open-prometheus load health \
-        k8s-build k8s-deploy k8s-status k8s-logs k8s-delete help
+        k8s-build k8s-deploy k8s-status k8s-logs k8s-delete \
+        k8s-describe k8s-events k8s-shell k8s-restart k8s-scale-up k8s-scale-down \
+        df prune help
 
 COMPOSE = docker compose
 PYTHON  = venv/bin/python
@@ -26,6 +28,9 @@ help:
 	@echo "  make k8s-scale-up    Scale to 2 replicas"
 	@echo "  make k8s-scale-down  Scale back to 1 replica"
 	@echo "  make k8s-delete      Remove agent from Kubernetes"
+	@echo ""
+	@echo "  make df              Show Docker disk usage breakdown"
+	@echo "  make prune           Remove unused images, containers, and build cache"
 
 up:
 	$(COMPOSE) up -d
@@ -100,3 +105,16 @@ k8s-scale-up:
 
 k8s-scale-down:
 	kubectl scale deployment runbook-agent --replicas=1
+
+df:
+	@echo "=== Docker disk usage ==="
+	docker system df
+	@echo ""
+	@echo "=== Mac free disk space ==="
+	df -h /
+
+prune:
+	docker image prune -f
+	docker builder prune -f
+	@echo ""
+	@echo "Run 'docker system prune -a' to also remove unused images (more aggressive)"

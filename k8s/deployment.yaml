@@ -29,6 +29,7 @@ spec:
           env:
             - name: PYTHONUNBUFFERED
               value: "1"
+          terminationMessagePolicy: FallbackToLogsOnError
           resources:
             requests:
               memory: "256Mi"

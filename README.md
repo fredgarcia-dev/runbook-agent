@@ -56,7 +56,8 @@ Incident Description
 | System metrics | Node Exporter |
 | LLM tracing | LangSmith (optional, graceful degradation) |
 | CLI / display | Rich |
-| Infrastructure | Docker Compose |
+| Containerisation | Docker + Docker Compose |
+| Orchestration | Kubernetes (Docker Desktop, local) |
 
 ---
 
@@ -75,14 +76,19 @@ runbook-agent/
 │   └── tracing.py                   # LangSmith integration (graceful degradation)
 ├── runbooks/                        # Markdown runbooks (RAG knowledge base)
 ├── scripts/
-│   ├── load_demo.py                 # Synthetic load generator (no API calls)
+│   ├── serve.py                     # Kubernetes server mode (continuous synthetic load)
+│   ├── load_demo.py                 # One-shot synthetic load generator (no API calls)
 │   └── health_check.py             # Stack validator
-├── prometheus/prometheus.yml        # Scrape configuration
+├── k8s/
+│   ├── deployment.yaml              # Kubernetes Deployment with probes + resource limits
+│   └── service.yaml                 # LoadBalancer service exposing metrics on :8001
+├── prometheus/prometheus.yml        # Scrape configs (local + Kubernetes targets)
 ├── grafana/
 │   ├── provisioning/               # Auto-wired datasource + dashboard loader
 │   └── dashboards/runbook_agent.json  # 5-row, 17-panel dashboard
-├── docker-compose.yml              # Full observability stack
-├── Makefile                        # Convenience commands
+├── Dockerfile                       # Container image for Kubernetes deployment
+├── docker-compose.yml              # Prometheus + Grafana + Node Exporter stack
+├── Makefile                        # Convenience commands (stack, K8s, disk management)
 └── BUILD_LOG.md                    # Phase-by-phase build history
 ```
 

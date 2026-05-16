@@ -243,6 +243,44 @@ Exit code `0` = all pass (CI-friendly).
 
 ---
 
+## Starting and Stopping the Demo
+
+### Full stop (free all resources)
+```bash
+make k8s-delete          # stop Kubernetes pod + service
+make down                # stop Prometheus, Grafana, Node Exporter
+```
+
+### Full start (bring everything back up)
+```bash
+make up                  # start Prometheus, Grafana, Node Exporter
+make k8s-build           # rebuild image and push to local registry
+make k8s-deploy          # deploy agent pod to Kubernetes
+make k8s-status          # confirm pod is Running 1/1
+```
+
+### Partial — observability stack only (no K8s)
+```bash
+make up                  # Grafana + Prometheus only
+python main.py --demo sev3   # run a real incident (needs ANTHROPIC_API_KEY)
+make load                # or generate synthetic data without API calls
+```
+
+### Check what's currently running
+```bash
+make ps                  # Docker Compose containers
+make k8s-status          # Kubernetes pod + service
+make df                  # Docker disk usage
+```
+
+> **Note:** The local registry (`localhost:5001`) runs as a standalone Docker container.
+> If it stops after a reboot, restart it with:
+> ```bash
+> docker start local-registry
+> ```
+
+---
+
 ## Build Log
 
 See [`BUILD_LOG.md`](BUILD_LOG.md) for a phase-by-phase record of what was built, key decisions, and architectural tradeoffs.

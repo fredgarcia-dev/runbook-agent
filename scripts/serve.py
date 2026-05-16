@@ -29,8 +29,8 @@ console = Console()
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Runbook Agent — Kubernetes server mode")
-    parser.add_argument("--batch", type=int, default=10, help="Incidents per cycle (default: 10)")
-    parser.add_argument("--interval", type=int, default=60, help="Seconds between cycles (default: 60)")
+    parser.add_argument("--batch", type=int, default=2, help="Incidents per cycle (default: 2)")
+    parser.add_argument("--interval", type=int, default=120, help="Seconds between cycles (default: 120)")
     args = parser.parse_args()
 
     start_metrics_server(8000)
